@@ -298,6 +298,7 @@ func (m *Manager) createDefiniteWorkspacePod(startContext *startWorkspaceContext
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf("%s-%s", prefix, req.Id),
+			Namespace:   m.Config.Namespace,
 			Labels:      labels,
 			Annotations: annotations,
 		},
@@ -646,7 +647,7 @@ func (m *Manager) createDefaultSecurityContext() (*corev1.SecurityContext, error
 	return res, nil
 }
 
-func (m *Manager) createPortsService(workspaceID string, metaID string, servicePrefix string, ports []*api.PortSpec) (*corev1.Service, error) {
+func (m *Manager) createPortsService(workspaceID string, metaID string, servicePrefix string, ports []*api.PortSpec) (corev1.Service, error) {
 	annotations := make(map[string]string)
 
 	// allocate ports
@@ -657,11 +658,11 @@ func (m *Manager) createPortsService(workspaceID string, metaID string, serviceP
 	}
 	alloc, err := m.ingressPortAllocator.UpdateAllocatedPorts(metaID, serviceName, portsToAllocate)
 	if err != nil {
-		return nil, err
+		return corev1.Service{}, err
 	}
 	serializedPorts, err := alloc.Marshal()
 	if err != nil {
-		return nil, err
+		return corev1.Service{}, err
 	}
 	annotations[ingressPortsAnnotation] = string(serializedPorts)
 
@@ -686,14 +687,15 @@ func (m *Manager) createPortsService(workspaceID string, metaID string, serviceP
 			WorkspacePort: fmt.Sprint(p.Port),
 		})
 		if err != nil {
-			return nil, xerrors.Errorf("cannot render public URL for %d: %w", p.Port, err)
+			return corev1.Service{}, xerrors.Errorf("cannot render public URL for %d: %w", p.Port, err)
 		}
 		annotations[fmt.Sprintf("gitpod/port-url-%d", p.Port)] = url
 	}
 
-	return &corev1.Service{
+	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: serviceName,
+			Name:      serviceName,
+			Namespace: m.Config.Namespace,
 			Labels: map[string]string{
 				"workspaceID":     workspaceID,
 				wsk8s.MetaIDLabel: metaID,
