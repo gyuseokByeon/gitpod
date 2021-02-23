@@ -150,11 +150,8 @@ func (m *Monitor) Start() error {
 // run checks the overall workspace state (on event or periodically). Run is best called as a goroutine.
 // Note: this function serializes the handling of pod/config map events per workspace, but not globally.
 func (m *Monitor) run() {
-	for {
-		select {
-		case <-m.ticker.C:
-			go m.doHousekeeping(context.Background())
-		}
+	for range m.ticker.C {
+		go m.doHousekeeping(context.Background())
 	}
 }
 
