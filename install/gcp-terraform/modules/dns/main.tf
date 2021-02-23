@@ -96,6 +96,6 @@ data "template_file" "values" {
   vars = {
     hostname       = local.hostname
     loadBalancerIP = google_compute_address.gitpod.address
-    shortname      = local.shortname
+    shortname      = var.gitpod.shortname
   }
 }
